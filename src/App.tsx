@@ -5,12 +5,12 @@ import Dashboard from "./pages/Dashboard";
 
 function App() {
   // Verificar si el usuario está logueado
-  const isLoggedIn = localStorage.getItem("auth") === "true";
+  const isAuth = localStorage.getItem("auth") === "true";
 
   return (
     <BrowserRouter>
       {/* ✅ Navbar solo si hay sesión */}
-      {isLoggedIn && (
+      {isAuth && (
         <nav className="flex gap-4 bg-yellow-600 p-4 text-white">
           <Link to="/">Inicio</Link>
           <Link to="/dashboard">Dashboard</Link>

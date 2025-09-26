@@ -28,7 +28,13 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100"
+      style={{
+        backgroundImage: "url('/src/assets/fondo-login.png')",  // ← aquí va tu fondo
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="flex w-full max-w-4xl bg-white rounded-2xl shadow-lg overflow-hidden">
         
         {/* Columna izquierda: Formulario */}
