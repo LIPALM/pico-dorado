@@ -1,9 +1,30 @@
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import PedidoCard from "../components/PedidoCard";
+import ModalPedido from "../components/ModalPedido";
+import type { PedidoData } from "../components/ModalPedido";
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("platos");
+  
+  // Estado para el modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [platoSeleccionado, setPlatoSeleccionado] = useState<{
+    nombre: string;
+    precio: string;
+    imagen: string;
+  } | null>(null);
+  
+  // Estado de fichas registradas con detalles
+  const [fichas, setFichas] = useState<Array<{
+    numero: number;
+    plato: string;
+    categoria: string;
+    cantidad: number;
+    metodoPago: string;
+    total: number;
+    fecha: string;
+  }>>([]);
   
   // Lista de platos disponibles
   const pedidos = [
@@ -44,15 +65,32 @@ function Dashboard() {
     },
   ];
 
-  // Estado de fichas registradas
-  const [fichas, setFichas] = useState<number[]>([]);
-
-  // Función al seleccionar un plato - MEJORADA para evitar duplicados
-  const handleSeleccionar = () => {
-    setFichas((prev) => {
-      const nuevoNumero = prev.length > 0 ? Math.max(...prev) + 1 : 1;
-      return [...prev, nuevoNumero];
+  // Función al seleccionar un plato - abre el modal
+  const handleSeleccionar = (pedido: typeof pedidos[0]) => {
+    setPlatoSeleccionado({
+      nombre: pedido.nombre,
+      precio: pedido.precio,
+      imagen: pedido.imagen,
     });
+    setIsModalOpen(true);
+  };
+
+  // Función para finalizar el pedido y generar ticket
+  const handleFinalizarPedido = (pedidoData: PedidoData): number => {
+    const nuevoNumero = fichas.length > 0 ? Math.max(...fichas.map(f => f.numero)) + 1 : 1;
+    
+    const nuevaFicha = {
+      numero: nuevoNumero,
+      plato: pedidoData.plato,
+      categoria: pedidoData.categoria,
+      cantidad: pedidoData.cantidad,
+      metodoPago: pedidoData.metodoPago,
+      total: pedidoData.total,
+      fecha: new Date().toLocaleDateString(),
+    };
+
+    setFichas((prev) => [...prev, nuevaFicha]);
+    return nuevoNumero;
   };
 
   // Función para renderizar el contenido según la sección activa
@@ -61,7 +99,7 @@ function Dashboard() {
       case "platos":
         return (
           <div>
-            <h1 className="text-3xl font-bold mb-5 text-slate-800">Menú</h1>
+            {/*<h1 className="text-3xl font-bold mb-6 text-slate-800">Tomar Pedido - Menú</h1>*/}
 
             {/* Cards de platos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -72,7 +110,7 @@ function Dashboard() {
                   nombre={pedido.nombre}
                   precio={pedido.precio}
                   estado={pedido.estado}
-                  onSeleccionar={handleSeleccionar}
+                  onSeleccionar={() => handleSeleccionar(pedido)}
                 />
               ))}
             </div>
@@ -128,21 +166,28 @@ function Dashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="space-y-4">
                   {fichas.map((ficha, index) => (
                     <div
                       key={index}
-                      className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl shadow-sm hover:shadow-md transition-all"
+                      className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
                     >
-                      <span className="text-xs text-amber-600 font-semibold mb-1">
-                        TICKET
-                      </span>
-                      <span className="text-3xl font-bold text-amber-700">
-                        #{String(ficha).padStart(3, "0")}
-                      </span>
-                      <span className="text-xs text-slate-500 mt-1">
-                        {new Date().toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <span className="text-xs text-amber-600 font-semibold block mb-1">
+                            TICKET - {String(ficha.numero).padStart(3, "0")}
+                          </span>
+                          <h3 className="text-xl font-bold text-slate-800">
+                            {ficha.plato}: {ficha.categoria}
+                          </h3>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500">Cantidad: {ficha.cantidad}</p>
+                          <p className="text-xs text-slate-500">total: {ficha.total}</p>
+                          <p className="text-xs text-slate-500">Pago: {ficha.metodoPago}</p>
+                          <p className="text-xs text-slate-400">{ficha.fecha}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -219,6 +264,14 @@ function Dashboard() {
       <div className="flex-1 bg-gray-50 p-6 overflow-y-auto">
         {renderContent()}
       </div>
+
+      {/* Modal de pedido */}
+      <ModalPedido
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        plato={platoSeleccionado}
+        onFinalizarPedido={handleFinalizarPedido}
+      />
     </div>
   );
 }
