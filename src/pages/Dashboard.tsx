@@ -61,7 +61,7 @@ function Dashboard() {
       case "platos":
         return (
           <div>
-            <h1 className="text-3xl font-bold mb-6 text-slate-800">Tomar Pedido - Menú</h1>
+            <h1 className="text-3xl font-bold mb-5 text-slate-800">Menú</h1>
 
             {/* Cards de platos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
