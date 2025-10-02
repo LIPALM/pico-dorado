@@ -17,6 +17,7 @@ export interface PedidoData {
   categoria: string;
   cantidad: number;
   refresco: string;
+  descripcion?: string;
   metodoPago: string;
   total: number;
 }
@@ -29,12 +30,13 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
   const [refresco, setRefresco] = useState("");
   const [showRefrescoSuggestions, setShowRefrescoSuggestions] = useState(false);
   const [metodoPago, setMetodoPago] = useState("Efectivo");
+  const [descripcion, setDescripcion] = useState("");
 
   // Opciones de refrescos con precios
   const refrescos = [
-    { nombre: "Coca Cola", precio: 5 },
-    { nombre: "Sprite", precio: 5 },
-    { nombre: "Fanta", precio: 5 },
+    { nombre: "Coca Cola", precio: 15 },
+    { nombre: "Sprite", precio: 13 },
+    { nombre: "Fanta", precio: 12 },
   ];
 
   if (!isOpen || !plato) return null;
@@ -59,6 +61,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
       categoria,
       cantidad,
       refresco: refresco || "Sin refresco",
+      descripcion: descripcion || undefined,
       metodoPago,
       total,
     };
@@ -75,6 +78,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
     setCategoria("Economico");
     setCantidad(1);
     setRefresco("");
+    setDescripcion("");
     setMetodoPago("Efectivo");
   };
 
@@ -84,6 +88,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
     setCategoria("Economico");
     setCantidad(1);
     setRefresco("");
+    setDescripcion("");
     setMetodoPago("Efectivo");
   };
 
@@ -164,8 +169,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
               >
                 <option value="Economico">Económico</option>
                 <option value="Cuarto">Cuarto</option>
-                <option value="Medio">Medio</option>
-                <option value="Entero">Entero</option>
+                
               </select>
             </div>
 
@@ -203,10 +207,12 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
                 Descripción del plato
               </label>
               <textarea
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none"
                 rows={3}
-                placeholder="Añade detalles especiales del pedido..."
-              />
+                placeholder="Añade detalles especiales del..."
+                />
             </div>
 
             {/* Refresco - AUTOCOMPLETE */}
@@ -271,7 +277,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
               >
                 <option value="Efectivo">Efectivo</option>
                 <option value="QR">QR</option>
-                <option value="Tarjeta">Tarjeta</option>
+                
               </select>
             </div>
 

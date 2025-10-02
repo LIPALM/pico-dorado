@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import PedidoCard from "../components/PedidoCard";
 import ModalPedido from "../components/ModalPedido";
 import type { PedidoData } from "../components/ModalPedido";
+import TicketDetail from "../components/TicketDetail";
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("platos");
@@ -21,10 +22,17 @@ function Dashboard() {
     plato: string;
     categoria: string;
     cantidad: number;
+    refresco: string;
+    descripcion?: string;
     metodoPago: string;
     total: number;
     fecha: string;
+    hora:  string;
   }>>([]);
+
+  // Estado para el modal de detalles del ticket
+  const [isTicketDetailOpen, setIsTicketDetailOpen] = useState(false);
+  const [ticketSeleccionado, setTicketSeleccionado] = useState<typeof fichas[0] | null>(null);
   
   // Lista de platos disponibles
   const pedidos = [
@@ -77,21 +85,25 @@ function Dashboard() {
 
   // Función para finalizar el pedido y generar ticket
   const handleFinalizarPedido = (pedidoData: PedidoData): number => {
-    const nuevoNumero = fichas.length > 0 ? Math.max(...fichas.map(f => f.numero)) + 1 : 1;
-    
-    const nuevaFicha = {
-      numero: nuevoNumero,
-      plato: pedidoData.plato,
-      categoria: pedidoData.categoria,
-      cantidad: pedidoData.cantidad,
-      metodoPago: pedidoData.metodoPago,
-      total: pedidoData.total,
-      fecha: new Date().toLocaleDateString(),
-    };
-
-    setFichas((prev) => [...prev, nuevaFicha]);
-    return nuevoNumero;
+  const nuevoNumero = fichas.length > 0 ? Math.max(...fichas.map(f => f.numero)) + 1 : 1;
+  
+  const ahora = new Date();
+  const nuevaFicha = {
+    numero: nuevoNumero,
+    plato: pedidoData.plato,
+    categoria: pedidoData.categoria,
+    cantidad: pedidoData.cantidad,
+    refresco: pedidoData.refresco,
+    descripcion: pedidoData.descripcion,
+    metodoPago: pedidoData.metodoPago,
+    total: pedidoData.total,
+    fecha: ahora.toLocaleDateString(),
+    hora: ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }),
   };
+
+  setFichas((prev) => [...prev, nuevaFicha]);
+  return nuevoNumero;
+};
 
   // Función para renderizar el contenido según la sección activa
   const renderContent = () => {
@@ -172,22 +184,41 @@ function Dashboard() {
                       key={index}
                       className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <span className="text-xs text-amber-600 font-semibold block mb-1">
-                            TICKET - {String(ficha.numero).padStart(3, "0")}
-                          </span>
-                          <h3 className="text-xl font-bold text-slate-800">
-                            {ficha.plato}: {ficha.categoria}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-xs text-amber-600 font-semibold bg-amber-100 px-3 py-1 rounded-full">
+                              TICKET #{String(ficha.numero).padStart(3, "0")}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {ficha.fecha} - {ficha.hora}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-800 mb-1">
+                            {ficha.plato} - {ficha.categoria}
                           </h3>
+                          <div className="flex gap-4 text-sm text-slate-600">
+                            <span>Cantidad: {ficha.cantidad}</span>
+                            <span>|</span>
+                            <span>Refresco: {ficha.refresco}</span>
+                            <span>|</span>
+                            <span>Pago: {ficha.metodoPago}</span>
+                          </div>
+                          <p className="text-lg font-bold text-amber-700 mt-2">
+                            Total: Bs. {ficha.total}
+                          </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-xs text-slate-500">Cantidad: {ficha.cantidad}</p>
-                          <p className="text-xs text-slate-500">total: {ficha.total}</p>
-                          <p className="text-xs text-slate-500">Pago: {ficha.metodoPago}</p>
-                          <p className="text-xs text-slate-400">{ficha.fecha}</p>
-                        </div>
-                      </div>
+
+                        <button
+                          onClick={() => {
+                            setTicketSeleccionado(ficha);
+                            setIsTicketDetailOpen(true);
+                          }}
+                          className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-200 font-semibold shadow-md hover:shadow-lg"
+                        >
+                          Ver Detalles
+                        </button>
+                      </div>  
                     </div>
                   ))}
                 </div>
@@ -271,6 +302,13 @@ function Dashboard() {
         onClose={() => setIsModalOpen(false)}
         plato={platoSeleccionado}
         onFinalizarPedido={handleFinalizarPedido}
+      />
+    
+      {/* Modal de datalles del ticket */}
+      <TicketDetail
+        isOpen={isTicketDetailOpen}
+        onClose={() => setIsTicketDetailOpen(false)}
+        ticket={ticketSeleccionado}
       />
     </div>
   );
