@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
+import { MdModeOfTravel } from "react-icons/md";
 
 interface ModalPedidoProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
   const [categoria, setCategoria] = useState("Economico");
   const [cantidad, setCantidad] = useState(1);
   const [refresco, setRefresco] = useState("");
+  const [montoRecibido, setMontoRecibido] = useState<number>(0);
   const [showRefrescoSuggestions, setShowRefrescoSuggestions] = useState(false);
   const [metodoPago, setMetodoPago] = useState("Efectivo");
   const [descripcion, setDescripcion] = useState("");
@@ -47,8 +49,9 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
   // Buscar precio del refresco seleccionado
   const refrescoSeleccionado = refrescos.find(r => r.nombre.toLowerCase() === refresco.toLowerCase());
   const precioRefresco = refrescoSeleccionado ? refrescoSeleccionado.precio : 0;
-  
+
   const total = (precioBase * cantidad) + precioRefresco;
+  const cambio = metodoPago === "Efectivo" ? Math.max(0, montoRecibido - total) : 0;
 
   // Filtrar sugerencias de refrescos
   const sugerenciasRefrescos = refrescos.filter(r => 
@@ -80,6 +83,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
     setRefresco("");
     setDescripcion("");
     setMetodoPago("Efectivo");
+    setMontoRecibido(0);
   };
 
   const handleCloseModal = () => {
@@ -90,6 +94,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
     setRefresco("");
     setDescripcion("");
     setMetodoPago("Efectivo");
+    setMontoRecibido(0);
   };
 
   const handleRefrescoChange = (value: string) => {
@@ -276,20 +281,53 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition appearance-none cursor-pointer"
               >
                 <option value="Efectivo">Efectivo</option>
-                <option value="QR">QR</option>
-                
+                <option value="QR">QR - Banco Union</option>
               </select>
             </div>
 
+            {/* Monto recibido (solo para efectivo) */}
+            {metodoPago === "Efectivo" && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Monto recibido
+                </label>
+                <input
+                  type="number"
+                  value={montoRecibido || ""}
+                  onChange={(e)=> setMontoRecibido(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition"
+                  placeholder="Ingrese el monto"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
             {/* Total a cobrar */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Total a cobrar
+                {metodoPago === "Efectivo" && montoRecibido > 0 ? "Cambio" : "Total a cobrar"}
               </label>
-              <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl">
-                <p className="text-2xl font-bold text-amber-700">
-                  Bs. {total}
-                </p>
+              <div className={`px-4 py-3 rounded-xl border-2 ${
+                metodoPago === "Efectivo" && montoRecibido >= total
+                  ? "bg-green-50 border-green-300"
+                  : "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300"
+              }`}>
+                {metodoPago === "Efectivo" && montoRecibido > 0 ?(
+                  <div>
+                    <p className="text-sm text-slate-600">
+                      Recibido: Bs. {montoRecibido.toFixed(2)} - total: Bs. {total} 
+                    </p>
+                    <p className={`text-2xl font-bold ${
+                      cambio >= 0 ? "text-green-700" : "text-red-700"
+                    }`}>
+                      {cambio >= 0 ? `Bs. ${cambio.toFixed(2)}` : "Monto insuficiente"}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-2xl font-bold text-amber-700">
+                    Bs. {total}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -297,9 +335,19 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
           {/* Botón Finalizar */}
           <button
             onClick={handleFinalizar}
-            className="w-full mt-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-bold text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+            disabled={metodoPago === "Efectivo" && montoRecibido < total}
+            className={`w-full mt-6 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl ${
+              metodoPago === "Efectivo" && montoRecibido < total
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+            }`}
           >
-            Finalizar pedido
+            {metodoPago === "QR"
+              ? "Confirmar Pago QR"
+              : metodoPago === "Efectivo" && montoRecibido < total
+              ? "Monto Insuficiente"
+              : "Finalizar Pedido"
+            }
           </button>
         </div>
       </div>
