@@ -43,16 +43,28 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
 
   if (!isOpen || !plato) return null;
 
-  // Calcular precio base sin "Bs. "
+  // Precio base del plato
   const precioBase = parseFloat(plato.precio.replace("Bs. ", ""));
   
+  // Precios según categoría
+  const preciosPorCategoria: { [key: string]: number } = {
+    "Economico": precioBase,
+    "Cuarto": precioBase * 2,
+  };
+  
+  // Precio según la categoría seleccionada
+  const precioPorCategoria = preciosPorCategoria[categoria] || precioBase;
+  
   // Buscar precio del refresco seleccionado
-  const refrescoSeleccionado = refrescos.find(r => r.nombre.toLowerCase() === refresco.toLowerCase());
+  const refrescoSeleccionado = refrescos.find(r => 
+    r.nombre.toLowerCase() === refresco.toLowerCase()
+  );
   const precioRefresco = refrescoSeleccionado ? refrescoSeleccionado.precio : 0;
-
-  const total = (precioBase * cantidad) + precioRefresco;
+  
+  // Calcular totales
+  const total = (precioPorCategoria * cantidad) + precioRefresco;
   const cambio = metodoPago === "Efectivo" ? Math.max(0, montoRecibido - total) : 0;
-
+  
   // Filtrar sugerencias de refrescos
   const sugerenciasRefrescos = refrescos.filter(r => 
     r.nombre.toLowerCase().includes(refresco.toLowerCase())
@@ -261,7 +273,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
               </label>
               <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <p className="text-xs text-slate-500 mb-1">
-                  Plato: Bs. {precioBase * cantidad}
+                  Plato ({categoria}): Bs. {precioPorCategoria * cantidad}
                   {precioRefresco > 0 && ` + Refresco: Bs. ${precioRefresco}`}
                 </p>
                 <p className="text-2xl font-bold text-amber-700">
