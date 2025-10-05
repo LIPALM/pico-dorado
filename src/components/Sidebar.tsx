@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaHome, FaSignOutAlt, FaChevronDown, FaChevronRight, FaUtensils, FaCreditCard, FaClipboardList, FaTicketAlt, FaTimes, FaChartLine } from "react-icons/fa";
+import { FaHome, FaSignOutAlt, FaChevronDown, FaChevronRight, FaUtensils, FaClipboardList, FaTicketAlt, FaTimes, FaChartLine } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import usuario from "../assets/usuario.png";
 
@@ -23,12 +23,6 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       icon: FaUtensils,
       label: "Platos",
       description: "Tomar pedidos"
-    },
-    {
-      id: "pagos",
-      icon: FaCreditCard,
-      label: "Pagos",
-      description: "Registrar pagos"
     },
     {
       id: "pedidos-activos",

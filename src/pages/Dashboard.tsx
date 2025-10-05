@@ -128,6 +128,10 @@ function Dashboard() {
     ));
   };
 
+  const handleImprimirReporte = () => {
+          window.print();
+        };
+
   // Función para renderizar el contenido según la sección activa
   const renderContent = () => {
     switch (activeSection) {
@@ -145,21 +149,6 @@ function Dashboard() {
                   onSeleccionar={() => handleSeleccionar(pedido)}
                 />
               ))}
-            </div>
-          </div>
-        );
-
-      case "pagos":
-        return (
-          <div>
-            <h1 className="text-3xl font-bold mb-6 text-slate-800">Registro de Pagos</h1>
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
-              <p className="text-slate-600 text-center">
-                Módulo de pagos en desarrollo...
-              </p>
-              <p className="text-sm text-slate-500 text-center mt-2">
-                Aquí se registrarán los diferentes métodos de pago (efectivo, tarjeta, QR)
-              </p>
             </div>
           </div>
         );
@@ -536,15 +525,168 @@ function Dashboard() {
         );
 
       case "reporte-diario":
+
+        // Filtrar solo pedidos NO anulados para el reporte
+        const pedidosValidos = fichas.filter(f => !f.anulado);
+        const pedidosAnulados = fichas.filter(f => f.anulado);
+
+        // calcular totales
+        const totalVentas = pedidosValidos.reduce((sum, f) => sum + f.total, 0);
+        const totalPedidos = pedidosValidos.length;
+
+        //Ventas por metodo de pago
+        const ventasPorMetodo = pedidosValidos.reduce((acc, f) => {
+          acc[f.metodoPago] = (acc[f.metodoPago] || 0) + f.total;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Pedidos por estado
+        const pedidosPorEstado = {
+          "En Preparación": pedidosValidos.filter(f => f.estado === "En Preparación").length,
+          "Listo": pedidosValidos.filter(f => f.estado === "Listo").length,
+          "Entregado": pedidosValidos.filter(f => f.estado === "Entregado").length,
+        };
+
+        // platos mas vendidos
+        const platosMasVendidos = pedidosValidos.reduce((acc, f) => {
+          const key = f.plato;
+          if (!acc[key]) {
+            acc[key] = { cantidad: 0, total: 0 };
+          }
+          acc[key].cantidad += f.cantidad;
+          acc[key].total += f.total;
+          return acc;
+        }, {} as Record<string, { cantidad: number; total: number }>);
+
         return (
           <div>
-            <h1 className="text-3xl font-bold mb-6 text-slate-800">Reporte Diario</h1>
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
-              <p className="text-slate-600 text-center">
-                Reporte de ventas en desarrollo...
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-slate-800">Reporte de Ventas Diarias</h1>
+              <button
+                onClick={handleImprimirReporte}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all font-semibold shadow-md"
+              >
+                🖨️ Imprimir Reporte
+              </button>
+            </div>
+
+            {/* Resumen General */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                <p className="text-sm text-green-600 font-semibold mb-2">Total Recaudado</p>
+                <p className="text-4xl font-bold text-green-700">Bs. {totalVentas.toFixed(2)}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-sm">
+                <p className="text-sm text-blue-600 font-semibold mb-2">Pedidos Completados</p>
+                <p className="text-4xl font-bold text-blue-700">{totalPedidos}</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl p-6 shadow-sm">
+                <p className="text-sm text-amber-600 font-semibold mb-2">Ticket Promedio</p>
+                <p className="text-4xl font-bold text-amber-700">
+                  Bs. {totalPedidos > 0 ? (totalVentas / totalPedidos).toFixed(2) : "0.00"}
+                </p>
+              </div>
+            </div>
+
+            {/* Ventas por método de pago */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
+              <h2 className="text-xl font-semibold text-slate-700 mb-4">Ventas por Método de Pago</h2>
+              <div className="space-y-3">
+                {Object.entries(ventasPorMetodo).map(([metodo, monto]) => (
+                  <div key={metodo} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">
+                        {metodo === "Efectivo" ? "💵" : metodo === "QR" ? "📱" : "💳"}
+                      </span>
+                      <span className="font-semibold text-slate-700">{metodo}</span>
+                    </div>
+                    <span className="text-xl font-bold text-slate-800">Bs. {monto.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pedidos por estado */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
+              <h2 className="text-xl font-semibold text-slate-700 mb-4">Estado de Pedidos</h2>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                  <p className="text-sm text-blue-600 font-semibold mb-1">En Preparación</p>
+                  <p className="text-3xl font-bold text-blue-700">{pedidosPorEstado["En Preparación"]}</p>
+                </div>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <p className="text-sm text-green-600 font-semibold mb-1">Listos</p>
+                  <p className="text-3xl font-bold text-green-700">{pedidosPorEstado["Listo"]}</p>
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                  <p className="text-sm text-amber-600 font-semibold mb-1">Entregados</p>
+                  <p className="text-3xl font-bold text-amber-700">{pedidosPorEstado["Entregado"]}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Platos más vendidos */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
+              <h2 className="text-xl font-semibold text-slate-700 mb-4">Platos Más Vendidos</h2>
+              <div className="space-y-3">
+                {Object.entries(platosMasVendidos)
+                  .sort((a, b) => b[1].cantidad - a[1].cantidad)
+                  .map(([plato, datos]) => (
+                    <div key={plato} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="font-semibold text-slate-700">{plato}</p>
+                        <p className="text-sm text-slate-500">{datos.cantidad} unidades vendidas</p>
+                      </div>
+                      <span className="text-lg font-bold text-slate-800">Bs. {datos.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Pedidos anulados */}
+            {pedidosAnulados.length > 0 && (
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-red-200 mb-6">
+                <h2 className="text-xl font-semibold text-red-700 mb-4">
+                  Pedidos Anulados ({pedidosAnulados.length})
+                </h2>
+                <div className="space-y-3">
+                  {pedidosAnulados.map((ficha, index) => (
+                    <div key={index} className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-slate-700">
+                          Ticket #{String(ficha.numero).padStart(3, "0")} - {ficha.plato}
+                        </span>
+                        <span className="text-sm text-slate-500">{ficha.fechaAnulacion}</span>
+                      </div>
+                      <p className="text-sm text-slate-600">
+                        <span className="font-semibold">Motivo:</span> {ficha.motivoAnulacion}
+                      </p>
+                      <p className="text-sm text-red-600 font-semibold mt-1">
+                        Monto no cobrado: Bs. {ficha.total}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Información del reporte */}
+            <div className="bg-slate-100 rounded-xl p-6 border border-slate-300">
+              <p className="text-sm text-slate-600">
+                <span className="font-semibold">Fecha del reporte:</span> {new Date().toLocaleDateString('es-BO', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
               </p>
-              <p className="text-sm text-slate-500 text-center mt-2">
-                Aquí se mostrará el resumen de ventas diarias para cierre de caja
+              <p className="text-sm text-slate-600 mt-1">
+                <span className="font-semibold">Hora:</span> {new Date().toLocaleTimeString('es-BO')}
+              </p>
+              <p className="text-sm text-slate-600 mt-1">
+                <span className="font-semibold">Sistema:</span> POS Pico Dorado v1.0
               </p>
             </div>
           </div>
