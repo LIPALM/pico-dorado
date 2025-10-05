@@ -29,6 +29,9 @@ function Dashboard() {
     fecha: string;
     hora: string;
     estado: "En Preparación" | "Listo" | "Entregado";
+    anulado: boolean;
+    motivoAnulacion?: string;
+    fechaAnulacion?: string;
   }>>([]);
 
   // Estado para el modal de detalles del ticket
@@ -37,6 +40,11 @@ function Dashboard() {
   
   // Estado para el filtro de pedidos activos
   const [filtroEstado, setFiltroEstado] = useState<"Todos" | "En Preparación" | "Listo">("Todos");
+
+  // Estados para anulación de pedidos
+  const [mostrarModalAnular, setMostrarModalAnular] = useState(false);
+  const [pedidoAAnular, setPedidoAAnular] = useState<typeof fichas[0] | null>(null);
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
 
   // Lista de platos disponibles
   const pedidos = [
@@ -104,6 +112,7 @@ function Dashboard() {
       fecha: ahora.toLocaleDateString(),
       hora: ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }),
       estado: "En Preparación" as const,
+      anulado: false,
     };
 
     setFichas((prev) => [...prev, nuevaFicha]);
@@ -156,7 +165,7 @@ function Dashboard() {
         );
 
       case "pedidos-activos":
-        const pedidosActivos = fichas.filter(f => f.estado !== "Entregado");
+        const pedidosActivos = fichas.filter(f => f.estado !== "Entregado" && !f.anulado);
         const pedidosFiltrados = filtroEstado === "Todos"
           ? pedidosActivos
           : pedidosActivos.filter(f => f.estado === filtroEstado);
@@ -369,17 +378,160 @@ function Dashboard() {
         );
 
       case "anular-pedidos":
+      // Filtrar pedidos que NO están entregados ni ya anulados
+        const pedidosAnulables = fichas.filter(f => f.estado !== "Entregado" && !f.anulado);
+
+        const handleAnularPedido = () => {
+          if (pedidoAAnular && motivoAnulacion.trim()) {
+            const ahora = new Date();
+            setFichas(fichas.map(ficha =>
+              ficha.numero === pedidoAAnular.numero
+                ? {
+                    ...ficha,
+                    anulado: true,
+                    motivoAnulacion: motivoAnulacion.trim(),
+                    fechaAnulacion: `${ahora.toLocaleDateString()} ${ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}`
+                  }
+                : ficha
+            ));
+          
+            // Limpiar y cerrar
+            setMostrarModalAnular(false);
+            setPedidoAAnular(null);
+            setMotivoAnulacion("");
+          }
+        };
+
         return (
           <div>
             <h1 className="text-3xl font-bold mb-6 text-slate-800">Anular Pedidos</h1>
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
-              <p className="text-slate-600 text-center">
-                Anulación de pedidos en desarrollo...
-              </p>
-              <p className="text-sm text-slate-500 text-center mt-2">
-                Aquí se podrán cancelar pedidos antes de su preparación
-              </p>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h2 className="text-xl font-semibold text-slate-700 mb-4">
+                Pedidos Activos Disponibles para Anular
+              </h2>
+
+              {pedidosAnulables.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 text-lg">No hay pedidos para anular</p>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Solo se pueden anular pedidos que no estén entregados
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pedidosAnulables.map((ficha, index) => (
+                    <div
+                      key={index}
+                      className="border-2 border-slate-200 rounded-xl p-6 hover:border-red-300 hover:bg-red-50 transition-all"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-lg font-bold text-slate-800">
+                              TICKET #{String(ficha.numero).padStart(3, "0")}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              ficha.estado === "En Preparación"
+                                ? "bg-blue-200 text-blue-800"
+                                : "bg-green-200 text-green-800"
+                            }`}>
+                              {ficha.estado}
+                            </span>
+                            <span className="text-sm text-slate-500">
+                              {ficha.hora}
+                            </span>
+                          </div>
+                          
+                          <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                            {ficha.plato} - {ficha.categoria}
+                          </h3>
+                          
+                          <div className="grid grid-cols-3 gap-4 text-sm text-slate-600">
+                            <div>
+                              <span className="font-semibold">Cantidad:</span> {ficha.cantidad}
+                            </div>
+                            <div>
+                              <span className="font-semibold">Refresco:</span> {ficha.refresco}
+                            </div>
+                            <div>
+                              <span className="font-semibold">Total:</span> Bs. {ficha.total}
+                            </div>
+                          </div>
+                        </div>
+                          
+                        <button
+                          onClick={() => {
+                            setPedidoAAnular(ficha);
+                            setMostrarModalAnular(true);
+                          }}
+                          className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all font-semibold shadow-md hover:shadow-lg"
+                        >
+                          Anular Pedido
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Modal de confirmación */}
+            {mostrarModalAnular && pedidoAAnular && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-4">
+                    Confirmar Anulación
+                  </h2>
+            
+                  <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                    <p className="text-sm text-red-700 font-semibold mb-2">
+                      ¿Está seguro de anular este pedido?
+                    </p>
+                    <p className="text-sm text-slate-700">
+                      Ticket #{String(pedidoAAnular.numero).padStart(3, "0")} - {pedidoAAnular.plato}
+                    </p>
+                  </div>
+            
+                  <div className="mb-6">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Motivo de anulación *
+                    </label>
+                    <textarea
+                      value={motivoAnulacion}
+                      onChange={(e) => setMotivoAnulacion(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 transition resize-none"
+                      rows={3}
+                      placeholder="Ejemplo: Cliente cambió de opinión, error en el pedido, etc."
+                    />
+                  </div>
+            
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setMostrarModalAnular(false);
+                        setPedidoAAnular(null);
+                        setMotivoAnulacion("");
+                      }}
+                      className="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-all font-semibold"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleAnularPedido}
+                      disabled={!motivoAnulacion.trim()}
+                      className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all ${
+                        motivoAnulacion.trim()
+                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 shadow-md"
+                          : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      }`}
+                    >
+                      Confirmar Anulación
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
