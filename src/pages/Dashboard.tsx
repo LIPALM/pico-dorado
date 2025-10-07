@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import PedidoCard from "../components/PedidoCard";
 import ModalPedido from "../components/ModalPedido";
 import type { PedidoData } from "../components/ModalPedido";
 import TicketDetail from "../components/TicketDetail";
+import * as api from "../services/api";
+import type { Ticket } from "../services/api";
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("platos");
@@ -15,36 +17,41 @@ function Dashboard() {
     precio: string;
     imagen: string;
   } | null>(null);
-  
-  // Estado de fichas registradas con detalles
-  const [fichas, setFichas] = useState<Array<{
-    numero: number;
-    plato: string;
-    categoria: string;
-    cantidad: number;
-    refresco: string;
-    descripcion?: string;
-    metodoPago: string;
-    total: number;
-    fecha: string;
-    hora: string;
-    estado: "En Preparación" | "Listo" | "Entregado";
-    anulado: boolean;
-    motivoAnulacion?: string;
-    fechaAnulacion?: string;
-  }>>([]);
+
+  // Estado de fichas desde la API
+  const [fichas, setFichas] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Estado para el modal de detalles del ticket
   const [isTicketDetailOpen, setIsTicketDetailOpen] = useState(false);
-  const [ticketSeleccionado, setTicketSeleccionado] = useState<typeof fichas[0] | null>(null);
+  const [ticketSeleccionado, setTicketSeleccionado] = useState<Ticket | null>(null);
   
   // Estado para el filtro de pedidos activos
   const [filtroEstado, setFiltroEstado] = useState<"Todos" | "En Preparación" | "Listo">("Todos");
 
   // Estados para anulación de pedidos
   const [mostrarModalAnular, setMostrarModalAnular] = useState(false);
-  const [pedidoAAnular, setPedidoAAnular] = useState<typeof fichas[0] | null>(null);
+  const [pedidoAAnular, setPedidoAAnular] = useState<Ticket | null>(null);
   const [motivoAnulacion, setMotivoAnulacion] = useState("");
+
+  // Cargar tickets al montar el componente
+  useEffect(() => {
+    cargarTickets();
+  }, []);
+
+  // Funcion para cargar tickets desde la API
+  const cargarTickets = async () => {
+    try {
+      setLoading(true);
+      const tickets = await api.obtenerTodosTickets();
+      setFichas(tickets);
+    } catch (error) {
+      console.error("Error al cargar tickets:", error);
+      alert("Error al cargar los tickets desde el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Lista de platos disponibles
   const pedidos = [
@@ -95,45 +102,79 @@ function Dashboard() {
     setIsModalOpen(true);
   };
 
-  // Función para finalizar el pedido y generar ticket
-  const handleFinalizarPedido = (pedidoData: PedidoData): number => {
-    const nuevoNumero = fichas.length > 0 ? Math.max(...fichas.map(f => f.numero)) + 1 : 1;
-    
-    const ahora = new Date();
-    const nuevaFicha = {
-      numero: nuevoNumero,
-      plato: pedidoData.plato,
-      categoria: pedidoData.categoria,
-      cantidad: pedidoData.cantidad,
-      refresco: pedidoData.refresco,
-      descripcion: pedidoData.descripcion,
-      metodoPago: pedidoData.metodoPago,
-      total: pedidoData.total,
-      fecha: ahora.toLocaleDateString(),
-      hora: ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }),
-      estado: "En Preparación" as const,
-      anulado: false,
-    };
+  // Función para finalizar el pedido y guardar en la API
+  const handleFinalizarPedido = async (pedidoData: PedidoData): Promise<number> => {
+    try {
+      const nuevoTicket = await api.crearTicket({
+        plato: pedidoData.plato,
+        categoria: pedidoData.categoria,
+        cantidad: pedidoData.cantidad,
+        refresco: pedidoData.refresco,
+        descripcion: pedidoData.descripcion,
+        metodoPago: pedidoData.metodoPago,
+        total: pedidoData.total,
+        fecha: pedidoData.fecha,
+        hora: pedidoData.hora,
+        estado: "En Preparación"
+      });
 
-    setFichas((prev) => [...prev, nuevaFicha]);
-    return nuevoNumero;
+      // Recargar tickets
+      await cargarTickets();
+      
+      return nuevoTicket.numero;
+    } catch (error) {
+      console.error("Error al crear ticket:", error);
+      alert("Error al guardar el ticket en el servidor");
+      return 0;
+    }
   };
 
   // Función para cambiar el estado de un pedido
-  const handleCambiarEstado = (numeroTicket: number, nuevoEstado: "En Preparación" | "Listo" | "Entregado") => {
-    setFichas(fichas.map(ficha => 
-      ficha.numero === numeroTicket 
-        ? { ...ficha, estado: nuevoEstado }
-        : ficha
-    ));
+  const handleCambiarEstado = async (numeroTicket: number, nuevoEstado: "En Preparación" | "Listo" | "Entregado") => {
+    try {
+      await api.actualizarEstadoTicket(numeroTicket, nuevoEstado);
+      await cargarTickets(); // Recargar tickets
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+      alert("Error al actualizar el estado del ticket");
+    }
+  };
+
+  // Función para anular pedido
+  const handleAnularPedido = async () => {
+    if (pedidoAAnular && motivoAnulacion.trim()) {
+      try {
+        await api.anularTicket(pedidoAAnular.numero);
+        await cargarTickets(); // Recargar tickets
+        
+        // Limpiar y cerrar
+        setMostrarModalAnular(false);
+        setPedidoAAnular(null);
+        setMotivoAnulacion("");
+      } catch (error) {
+        console.error("Error al anular pedido:", error);
+        alert("Error al anular el pedido");
+      }
+    }
   };
 
   const handleImprimirReporte = () => {
-          window.print();
-        };
+    window.print();
+  };
 
   // Función para renderizar el contenido según la sección activa
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Cargando...</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case "platos":
         return (
@@ -154,7 +195,7 @@ function Dashboard() {
         );
 
       case "pedidos-activos":
-        const pedidosActivos = fichas.filter(f => f.estado !== "Entregado" && !f.anulado);
+        const pedidosActivos = fichas.filter(f => f.estado !== "Entregado" && f.activo);
         const pedidosFiltrados = filtroEstado === "Todos"
           ? pedidosActivos
           : pedidosActivos.filter(f => f.estado === filtroEstado);
@@ -367,29 +408,7 @@ function Dashboard() {
         );
 
       case "anular-pedidos":
-      // Filtrar pedidos que NO están entregados ni ya anulados
-        const pedidosAnulables = fichas.filter(f => f.estado !== "Entregado" && !f.anulado);
-
-        const handleAnularPedido = () => {
-          if (pedidoAAnular && motivoAnulacion.trim()) {
-            const ahora = new Date();
-            setFichas(fichas.map(ficha =>
-              ficha.numero === pedidoAAnular.numero
-                ? {
-                    ...ficha,
-                    anulado: true,
-                    motivoAnulacion: motivoAnulacion.trim(),
-                    fechaAnulacion: `${ahora.toLocaleDateString()} ${ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}`
-                  }
-                : ficha
-            ));
-          
-            // Limpiar y cerrar
-            setMostrarModalAnular(false);
-            setPedidoAAnular(null);
-            setMotivoAnulacion("");
-          }
-        };
+        const pedidosAnulables = fichas.filter(f => f.estado !== "Entregado" && f.activo);
 
         return (
           <div>
@@ -525,29 +544,23 @@ function Dashboard() {
         );
 
       case "reporte-diario":
+        const pedidosValidos = fichas.filter(f => f.activo);
+        const pedidosAnulados = fichas.filter(f => !f.activo);
 
-        // Filtrar solo pedidos NO anulados para el reporte
-        const pedidosValidos = fichas.filter(f => !f.anulado);
-        const pedidosAnulados = fichas.filter(f => f.anulado);
-
-        // calcular totales
         const totalVentas = pedidosValidos.reduce((sum, f) => sum + f.total, 0);
         const totalPedidos = pedidosValidos.length;
 
-        //Ventas por metodo de pago
         const ventasPorMetodo = pedidosValidos.reduce((acc, f) => {
           acc[f.metodoPago] = (acc[f.metodoPago] || 0) + f.total;
           return acc;
         }, {} as Record<string, number>);
 
-        // Pedidos por estado
         const pedidosPorEstado = {
           "En Preparación": pedidosValidos.filter(f => f.estado === "En Preparación").length,
           "Listo": pedidosValidos.filter(f => f.estado === "Listo").length,
           "Entregado": pedidosValidos.filter(f => f.estado === "Entregado").length,
         };
 
-        // platos mas vendidos
         const platosMasVendidos = pedidosValidos.reduce((acc, f) => {
           const key = f.plato;
           if (!acc[key]) {
@@ -598,7 +611,7 @@ function Dashboard() {
                   <div key={metodo} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
-                        {metodo === "Efectivo" ? "💵" : metodo === "QR" ? "📱" : "💳"}
+                        {metodo === "Efectivo" ? "💵" : metodo === "QR" || metodo.includes("QR") ? "📱" : "💳"}
                       </span>
                       <span className="font-semibold text-slate-700">{metodo}</span>
                     </div>
@@ -658,11 +671,8 @@ function Dashboard() {
                         <span className="font-semibold text-slate-700">
                           Ticket #{String(ficha.numero).padStart(3, "0")} - {ficha.plato}
                         </span>
-                        <span className="text-sm text-slate-500">{ficha.fechaAnulacion}</span>
+                        <span className="text-sm text-slate-500">{ficha.fecha} {ficha.hora}</span>
                       </div>
-                      <p className="text-sm text-slate-600">
-                        <span className="font-semibold">Motivo:</span> {ficha.motivoAnulacion}
-                      </p>
                       <p className="text-sm text-red-600 font-semibold mt-1">
                         Monto no cobrado: Bs. {ficha.total}
                       </p>

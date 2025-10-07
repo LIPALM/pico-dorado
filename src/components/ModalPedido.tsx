@@ -21,6 +21,8 @@ export interface PedidoData {
   descripcion?: string;
   metodoPago: string;
   total: number;
+  fecha: string;
+  hora: string;
 }
 
 function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoProps) {
@@ -71,6 +73,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
   );
 
   const handleFinalizar = () => {
+    const ahora = new Date();
     const pedidoData: PedidoData = {
       plato: plato.nombre,
       categoria,
@@ -79,6 +82,8 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
       descripcion: descripcion || undefined,
       metodoPago,
       total,
+      fecha: ahora.toLocaleDateString(),
+      hora: ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })
     };
 
     const nuevoTicket = onFinalizarPedido(pedidoData);
