@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaHome, FaSignOutAlt, FaChevronDown, FaChevronRight, FaUtensils, FaClipboardList, FaTicketAlt, FaTimes, FaChartLine } from "react-icons/fa";
+import { FaHome, FaSignOutAlt, FaChevronDown, FaChevronRight, FaUtensils, FaClipboardList, FaTicketAlt, FaTimes, FaChartLine, FaUser } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import usuario from "../assets/usuario.png";
 
@@ -47,6 +47,12 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       icon: FaChartLine,
       label: "Reporte Diario",
       description: "Ventas del día"
+    },
+    {
+    id: "perfil",
+    icon: FaUser,  // ← Necesitarás importar FaUser
+    label: "Mi Perfil",
+    description: "Ver y editar datos"
     }
   ];
 

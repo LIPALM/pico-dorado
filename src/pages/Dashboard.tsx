@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import PedidoCard from "../components/PedidoCard";
 import ModalPedido from "../components/ModalPedido";
@@ -9,6 +10,7 @@ import type { Ticket } from "../services/api";
 
 function Dashboard() {
   const [activeSection, setActiveSection] = useState("platos");
+  const navigate = useNavigate();
   
   // Estado para el modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -680,7 +682,7 @@ function Dashboard() {
                   ))}
                 </div>
               </div>
-            )}
+            )} 
 
             {/* Información del reporte */}
             <div className="bg-slate-100 rounded-xl p-6 border border-slate-300">
@@ -701,6 +703,10 @@ function Dashboard() {
             </div>
           </div>
         );
+
+        case "perfil":
+        navigate('/perfil');
+        return null;
 
       default:
         return (
