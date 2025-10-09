@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import loginIcon from "../assets/login.png";   // ← tu imagen del usuario
-import platoLogin from "../assets/icono.png"; // ← tu imagen del plato
+import { login } from "../services/auth";  // ← NUEVO
+import loginIcon from "../assets/login.png";
+import platoLogin from "../assets/icono.png";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -15,22 +16,25 @@ function Login() {
     setError("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 700));
-
-    if (email === "leo40lipa@gmail.com" && password === "123456") {
-      localStorage.setItem("auth", "true");
-      setLoading(false);
+    try {
+      // ✅ Usar API real en lugar de validación hardcodeada
+      const response = await login(email, password);
+      
+      console.log('Login exitoso:', response);
+      
+      // Redirigir al dashboard
       navigate("/dashboard");
-    } else {
+    } catch (err: any) {
+      setError(err.message || "Error al iniciar sesión");
+    } finally {
       setLoading(false);
-      setError("Credenciales inválidas.");
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100"
       style={{
-        backgroundImage: "url('/src/assets/fondo-login.png')",  // ← aquí va tu fondo
+        backgroundImage: "url('/src/assets/fondo-login.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -65,13 +69,16 @@ function Login() {
               className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:border-black text-sm"
             />
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full max-w-sm py-3 flex items-center justify-center rounded-md font-medium text-gray-800 bg-orange-100 hover:bg-orange-200 transition"
-
+              className="w-full max-w-sm py-3 flex items-center justify-center rounded-md font-medium text-gray-800 bg-orange-100 hover:bg-orange-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Ingresando..." : "L o g i n"}
             </button>
@@ -93,6 +100,13 @@ function Login() {
             />
             Google
           </button>
+
+          {/* Nota para desarrollo */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
+            <p className="font-semibold mb-1">🔧 Modo Desarrollo:</p>
+            <p>Crea un usuario en Thunder Client con POST a:</p>
+            <p className="font-mono text-[10px]">http://localhost:5000/api/auth/registro</p>
+          </div>
         </div>
 
         {/* Columna derecha: Imagen plato */}
