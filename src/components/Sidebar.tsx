@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FaHome, FaSignOutAlt, FaChevronDown, FaChevronRight, FaUtensils, FaClipboardList, FaTicketAlt, FaTimes, FaChartLine, FaUser } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";  // ← Agregar Link
 import usuario from "../assets/usuario.png";
 
 interface SidebarProps {
@@ -14,6 +14,8 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
 
   const handleLogout = () => {
     localStorage.removeItem("auth");
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
     navigate("/login");
   };
 
@@ -47,12 +49,6 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       icon: FaChartLine,
       label: "Reporte Diario",
       description: "Ventas del día"
-    },
-    {
-    id: "perfil",
-    icon: FaUser,  // ← Necesitarás importar FaUser
-    label: "Mi Perfil",
-    description: "Ver y editar datos"
     }
   ];
 
@@ -60,7 +56,6 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
     <div className="w-72 h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col shadow-xl border-r border-slate-200">
       {/* Header con logo y usuario */}
       <div className="px-6 py-8 border-b border-slate-200 bg-white/50">
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
             <span className="text-white font-bold text-lg">PD</span>
@@ -70,7 +65,6 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
           </div>
         </div>
 
-        {/* Usuario */}
         <div className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-slate-100">
           <img
             src={usuario}
@@ -136,7 +130,6 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
                         </span>
                       </div>
                       
-                      {/* Indicador activo */}
                       {isActive && (
                         <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
                       )}
@@ -146,6 +139,15 @@ function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
               </div>
             )}
           </div>
+
+          {/* ← AGREGAR BOTÓN DE PERFIL SEPARADO */}
+          <Link
+            to="/perfil"
+            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 text-slate-700 hover:bg-white hover:shadow-sm mt-4"
+          >
+            <FaUser className="text-lg text-slate-500" />
+            <span className="font-medium">Mi Perfil</span>
+          </Link>
         </nav>
 
         {/* Sección de estado del sistema */}
