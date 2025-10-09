@@ -72,7 +72,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
     r.nombre.toLowerCase().includes(refresco.toLowerCase())
   );
 
-  const handleFinalizar = () => {
+  const handleFinalizar = async () => {
     const ahora = new Date();
     const pedidoData: PedidoData = {
       plato: plato.nombre,
@@ -86,7 +86,7 @@ function ModalPedido({ isOpen, onClose, plato, onFinalizarPedido }: ModalPedidoP
       hora: ahora.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })
     };
 
-    const nuevoTicket = onFinalizarPedido(pedidoData);
+    const nuevoTicket = await onFinalizarPedido(pedidoData);
     setTicketGenerado(`Ticket #${String(nuevoTicket || 1).padStart(3, "0")}`);
     setShowSuccess(true);
   };
