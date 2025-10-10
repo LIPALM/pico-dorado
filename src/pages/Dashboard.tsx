@@ -66,7 +66,7 @@ function Dashboard() {
     },
     { 
       id: 2,
-      imagen: "/platos/Pollo-Broaster3.png",
+      imagen: "/platos/pollo-al-spiedo.png",
       nombre: "Pollo al Spiedo",
       precio: "Bs. 18",
       estado: "Disponible" as const,
